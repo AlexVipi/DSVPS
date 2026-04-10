@@ -1,0 +1,23 @@
+# Data files with user info
+db.json
+payments.json
+
+# WireGuard configs and QR codes (contain private keys)
+configs/
+client.conf
+qr.png
+
+# Logs
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+.env.*
+
+# Claude internal
+.claude/
