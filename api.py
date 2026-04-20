@@ -232,6 +232,11 @@ def delete_user(user_id: str):
 @app.post("/buy/{user_id}")
 def buy(user_id: str, months: int = Query(default=1)):
     db = load_db()
+    conf_path = f"{CONF_DIR}/{user_id}.conf"
+
+    # Пользователь уже существует — продлеваем, а не создаём нового пира
+    if user_id in db and isinstance(db.get(user_id), dict) and os.path.exists(conf_path):
+        return _do_extend(user_id, months=months)
 
     private, public = gen_keys()
     ip = get_next_ip(db)
@@ -532,6 +537,12 @@ def _do_extend(user_id: str, months: int = 1) -> dict:
     db[user_id]["expires"] = max(current_expires, now) + months * 30 * 24 * 3600
     db[user_id]["subscribed_at"] = now
     db[user_id]["notified"] = {}  # сброс уведомлений для нового периода
+
+    # Если пир был деактивирован по истечении — реактивируем
+    if not db[user_id].get("active", True):
+        add_peer(db[user_id]["public_key"], db[user_id]["ip"])
+        db[user_id]["active"] = True
+
     save_db(db)
 
     return {

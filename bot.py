@@ -26,7 +26,7 @@ TXID_RE = re.compile(r'^([0-9a-fA-F]{64}|[A-Za-z0-9+/_\-]{43,44}=?)$')
 _pending_polls: dict = {}
 
 DB_PATH = "/opt/vpn-service/db.json"
-_EXTEND_KB = InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Продлить", callback_data="extend")]])
+_EXTEND_KB = InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Продлить", callback_data="extend", style="success")]])
 
 TOKEN = "8649755881:AAF0xu_TCORH71JchmDSg2AezaQmuNWbP2s"
 API_URL = "http://127.0.0.1:8000"
@@ -122,9 +122,9 @@ async def _show_period_selection(update, context, action):
     message = query.message
     s = cfg.STARS_PER_USD
     keyboard = [
-        [InlineKeyboardButton(f"1 месяц — $1 / {s} ⭐",     callback_data=f"{action}_1m")],
-        [InlineKeyboardButton(f"2 месяца — $2 / {s * 2} ⭐", callback_data=f"{action}_2m")],
-        [InlineKeyboardButton(f"3 месяца — $3 / {s * 3} ⭐", callback_data=f"{action}_3m")],
+        [InlineKeyboardButton(f"1 месяц — $1 / {s} ⭐",     callback_data=f"{action}_1m", style="primary")],
+        [InlineKeyboardButton(f"2 месяца — $2 / {s * 2} ⭐", callback_data=f"{action}_2m", style="primary")],
+        [InlineKeyboardButton(f"3 месяца — $3 / {s * 3} ⭐", callback_data=f"{action}_3m", style="primary")],
     ]
     await message.reply_text("🗓 Выберите срок подписки:", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -137,11 +137,11 @@ async def _show_network_selection(update, context, action, months):
     usd = months  # $1 за месяц
     keyboard = [
         [
-            InlineKeyboardButton(f"USDT TRC-20 (${usd})", callback_data=f"{action}_{months}m_tron"),
-            InlineKeyboardButton(f"USDT TON (${usd})",    callback_data=f"{action}_{months}m_ton"),
+            InlineKeyboardButton(f"USDT TRC-20 (${usd})", callback_data=f"{action}_{months}m_tron", style="primary"),
+            InlineKeyboardButton(f"USDT TON (${usd})",    callback_data=f"{action}_{months}m_ton",  style="primary"),
         ],
         [
-            InlineKeyboardButton(f"⭐ Telegram Stars ({stars} ⭐)", callback_data=f"{action}_{months}m_stars"),
+            InlineKeyboardButton(f"⭐ Telegram Stars ({stars} ⭐)", callback_data=f"{action}_{months}m_stars", style="primary"),
         ],
     ]
     await message.reply_text("💳 Выберите способ оплаты:", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -392,7 +392,7 @@ async def myvpn(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🇳🇱 NL", callback_data="set_loc_Server2"),
         ],
         [
-            InlineKeyboardButton("🔄 Продлить", callback_data="extend"),
+            InlineKeyboardButton("🔄 Продлить", callback_data="extend", style="success"),
         ]
     ]
 
@@ -406,32 +406,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_admin(user_id):
         keyboard = [
             [
-                InlineKeyboardButton("🚀 Trial", callback_data="trial"),
-                InlineKeyboardButton("💳 Купить", callback_data="buy"),
+                InlineKeyboardButton("🚀 Пробная подписка", callback_data="trial",    style="success"),
+                InlineKeyboardButton("💳 Купить",          callback_data="buy",      style="primary"),
                 InlineKeyboardButton("📥 Скачать конфиг", callback_data="get_conf"),
             ],
             [
-                InlineKeyboardButton("👥 Пользователи", callback_data="users"),
-                InlineKeyboardButton("❌ Удалить", callback_data="delete"),
-                InlineKeyboardButton("📊 Моя подписка", callback_data="myvpn"),
+                InlineKeyboardButton("👥 Пользователи",   callback_data="users"),
+                InlineKeyboardButton("❌ Удалить",         callback_data="delete",   style="danger"),
+                InlineKeyboardButton("📊 Моя подписка",   callback_data="myvpn"),
             ],
             [
-                InlineKeyboardButton("🎁 Выдать доступ", callback_data="grant"),
-                InlineKeyboardButton("❓ Помощь", callback_data="help"),
+                InlineKeyboardButton("🎁 Выдать доступ",  callback_data="grant",    style="success"),
+                InlineKeyboardButton("❓ Помощь",          callback_data="help"),
             ]
         ]
     else:
         keyboard = [
             [
-                InlineKeyboardButton("🚀 Получить VPN", callback_data="trial"),
-                InlineKeyboardButton("💳 Купить", callback_data="buy"),
+                InlineKeyboardButton("🚀 Пробная подписка", callback_data="trial",    style="success"),
+                InlineKeyboardButton("💳 Купить",          callback_data="buy",      style="primary"),
             ],
             [
-                InlineKeyboardButton("📊 Моя подписка", callback_data="myvpn"),
+                InlineKeyboardButton("📊 Моя подписка",   callback_data="myvpn"),
                 InlineKeyboardButton("📥 Скачать конфиг", callback_data="get_conf"),
             ],
             [
-                InlineKeyboardButton("❓ Помощь", callback_data="help"),
+                InlineKeyboardButton("❓ Помощь",          callback_data="help"),
             ]
         ]
 
@@ -494,6 +494,7 @@ async def users(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     db = json.load(open("/opt/vpn-service/db.json"))
     now = int(time.time())
+    trial_used_list = db.get("trial_used", [])
     text = "👥 Пользователи:\n\n"
 
     for uid, data in db.items():
@@ -507,7 +508,7 @@ async def users(update: Update, context: ContextTypes.DEFAULT_TYPE):
             time_str = f"{days:02d} д {hours:02d} ч {mins:02d} м"
         else:
             time_str = "истекла"
-        trial_str = "trial использован" if data.get("trial_used") else "trial не использован"
+        trial_str = "trial использован" if uid in trial_used_list else "trial не использован"
         text += f"`{uid}` | {data.get('ip', '?')} | {time_str} | {trial_str}\n"
 
     await query.message.reply_text(text, parse_mode="Markdown")
@@ -522,8 +523,8 @@ async def delete_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
         [
-            InlineKeyboardButton("✏️ Ввести ID", callback_data="delete_by_id"),
-            InlineKeyboardButton("👥 Список пользователей", callback_data="delete_from_list"),
+            InlineKeyboardButton("✏️ Ввести ID",            callback_data="delete_by_id",       style="danger"),
+            InlineKeyboardButton("👥 Список пользователей", callback_data="delete_from_list",   style="danger"),
         ]
     ]
     await query.message.reply_text("Как хочешь удалить пользователя?", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -561,7 +562,7 @@ async def delete_from_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
             label = f"{uid} | {ip} | {days} д"
         else:
             label = f"{uid} | {ip} | истекла"
-        keyboard.append([InlineKeyboardButton(f"❌ {label}", callback_data=f"del_user_{uid}")])
+        keyboard.append([InlineKeyboardButton(f"❌ {label}", callback_data=f"del_user_{uid}", style="danger")])
 
     if keyboard:
         await query.message.reply_text("Выбери пользователя для удаления:", reply_markup=InlineKeyboardMarkup(keyboard))
